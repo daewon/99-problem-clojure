@@ -33,6 +33,18 @@
 (defmacro _mconcat [la lb] `(list ~@la ~@lb))
 (defn mconcat3 [la lb] (eval `(_mconcat ~la ~lb)))
 
+
+(defn mtake-while [pred coll]
+  (lazy-seq (let [[h & r] coll]
+    (when (pred h) (cons h (mtake-while pred r))))))
+
+(defn mdrop-while [pred coll]
+  (when-not (empty? coll)
+    (let [[h & r] coll]
+    (if (pred h)
+      (mdrop-while pred r)
+      (cons h r)))))
+
 "
 P01 (*) Find the last box of a list.
     Example:
@@ -178,16 +190,6 @@ Example:
    (= a (first coll)) (span1 (first coll) (rest coll) (cons a acc))
    :else (list acc coll)))
 
-(defn mtake-while [pred coll]
-  (lazy-seq (let [[h & r] coll]
-    (when (pred h) (cons h (mtake-while pred r))))))
-
-(defn mdrop-while [pred coll]
-  (when-not (empty? coll)
-    (let [[h & r] coll]
-    (if (pred h)
-      (mdrop-while pred r)
-      (cons h r)))))
         
 (defn mpack [coll]
   (when-not (empty? coll)
@@ -196,7 +198,20 @@ Example:
       (cons h (mpack r)))))
 
 (mpack '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
-(mmap #(list (count %) (first %)) (mpack '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e)))
+
+(defn encode-run-length [coll]
+  (mmap #(list (count %) (first %)) (mpack coll)))
+
+(encode-run-length '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
+
+(defn decode-run-length [coll]
+  (when-not (empty? coll)
+    (let [[h & r] coll
+          len (first h)
+          item (last h)]
+      (concat (repeat len item) (decode-run-length r)))))
+
+(decode-run-length (encode-run-length '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e)))
 
 (defn -main [& args] (println "Hello, World!"))
 
