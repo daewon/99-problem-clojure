@@ -1,7 +1,14 @@
 (ns daewon.core (:gen-class))
 
-(defmacro _mcons [a lb] `(list ~a ~@lb))
-(defn mcons [a lb] (cons a lb))
+(defmacro mcons-macro [a lb]`(list ~a ~@lb))
+
+(def mcons cons) ;; how to implement cons?
+
+(defn mfirst [ls] (let [[h & r] ls] h))
+
+(defn mrest [ls] (let [[h & r] ls] r))
+
+(defn mrepeat [cnt item] (take cnt (lazy-seq (cons item (mrepeat cnt item)))))
 
 (defn minterleave [as bs]
   (when-not (empty? as)
@@ -10,13 +17,13 @@
 
 (minterleave [1 3 5] [2 4 6 7])
 
-(defn mmap [f coll]
-  (when-not (empty? coll)
-    (let [[x & xs] coll]
+(defn mmap [f ls]
+  (when-not (empty? ls)
+    (let [[x & xs] ls]
       (mcons (f x) (mmap f xs)))))
 
-(defmacro mmap2 [f coll]
-  `(for [i# ~coll] (~f i#)))
+(defmacro mmap-macro [f ls]
+  `(for [i# ~ls] (~f i#)))
 
 (defn mconcat2 [la lb]
   (let [acc (atom [])]
@@ -30,46 +37,44 @@
       (mcons h (mconcat r lb))
       lb)))
 
-(defmacro _mconcat [la lb] `(list ~@la ~@lb))
-(defn mconcat3 [la lb] (eval `(_mconcat ~la ~lb)))
+(defmacro mconcat-macro [la lb] `(list ~@la ~@lb))
+(defn mconcat3 [la lb] (eval `(mconcat-macro ~la ~lb)))
 
+(defn mtake-while [pred ls]
+  (lazy-seq (let [[h & r] ls]
+              (when (pred h) (mcons h (mtake-while pred r))))))
 
-(defn mtake-while [pred coll]
-  (lazy-seq (let [[h & r] coll]
-    (when (pred h) (cons h (mtake-while pred r))))))
-
-(defn mdrop-while [pred coll]
-  (when-not (empty? coll)
-    (let [[h & r] coll]
-    (if (pred h)
-      (mdrop-while pred r)
-      (cons h r)))))
-
+(defn mdrop-while [pred ls]
+  (when-not (empty? ls)
+    (let [[h & r] ls]
+      (if (pred h)
+        (mdrop-while pred r)
+        (mcons h r)))))
 "
 P01 (*) Find the last box of a list.
     Example:
     * (mlast '(a b c d))
     (D)
 "
-(defn mlast [coll]
-  (let [[head & rest] coll]
-    (if (empty? rest)
+(defn mlast [ls]
+  (let [[head & r] ls]
+    (if (empty? r)
       head
-      (mlast rest))))
+      (mlast r))))
 
-(defn mlast2 [coll]
-  (first (drop (- (count coll) 1) coll)))
+(defn mlast2 [ls]
+  (mfirst (drop (- (count ls) 1) ls)))
 
-(defn mlast3 [coll]
-  (let [n (- (count coll) 1)]
-    (->> coll (drop n) first)))
+(defn mlast3 [ls]
+  (let [n (- (count ls) 1)]
+    (->> ls (drop n) first)))
 
-(defn mlast3 [coll]
-  (let [n (- (count coll) 1)]
-    (->> coll (drop n) first)))
+(defn mlast3 [ls]
+  (let [n (- (count ls) 1)]
+    (->> ls (drop n) first)))
 
-(defn mlast4 [coll]
-  (reduce (fn [a b] (identity b)) coll))
+(defn mlast4 [ls]
+  (reduce (fn [a b] (identity b)) ls))
 
 (mlast [1 2 3 4]) 
 (mlast2 [1 2 3 4])
@@ -82,13 +87,13 @@ P02 (*) Find the last but one box of a list.
     * (mbut-last '(a b c d))
     (A B C)
 "
-(defn mbut-last [coll]
-  (let [[f & r] coll]
+(defn mbut-last [ls]
+  (let [[f & r] ls]
     (when-not (empty? r)
       (lazy-seq (cons f (mbut-last r))))))
 
-(defn mbut-last2 [coll]
-  (take (- (count coll) 1) coll))
+(defn mbut-last2 [ls]
+  (take (- (count ls) 1) ls))
 
 (mbut-last [1 2 3 4])
 (mbut-last2 [1 2 3 4])
@@ -97,14 +102,14 @@ P02 (*) Find the last but one box of a list.
 P03 (*) Find the K'th element of a list.
 The first element in the list is number 0.
 "
-(defn mnth [coll n]
-  (let [[h & r] coll]
+(defn mnth [ls n]
+  (let [[h & r] ls]
     (if (= n 0)
       h
       (mnth r (dec n)))))
 
-(defn mnth2 [coll n]
-  (first (drop n coll)))
+(defn mnth2 [ls n]
+  (first (drop n ls)))
 
 (mnth [1 2 3] 1)
 (mnth2 [1 2 3] 1)
@@ -112,29 +117,29 @@ The first element in the list is number 0.
 "  
 P04 (*) Find the number of elements of a list.)
 "
-(defn mlength [coll]
-  (let [[h & r] coll]
+(defn mcount [ls]
+  (let [[h & r] ls]
     (if (empty? r)
       1
-      (+ 1 (mlength r)))))
+      (+ 1 (mcount r)))))
 
-(defn mlength2 [coll]
-  (reduce (fn [a b] (+ 1 a)) coll))
+(defn mcount2 [ls]
+  (reduce (fn [a b] (+ 1 a)) ls))
 
-(mlength [1 2 3])
-(mlength2 [1 2 3])
+(mcount[1 2 3])
+(mcount2 [1 2 3])
 
 "
 P05 (*) Reverse a list.)
 "
-(defn mreverse [coll]
-  (let [[h & r] coll]
+(defn mreverse [ls]
+  (let [[h & r] ls]
     (if (empty? r)
       [h]
       (conj (mreverse r) h))))
 
-(defn mreverse2 [coll]
-  (let [[h & r] coll]
+(defn mreverse2 [ls]
+  (let [[h & r] ls]
     (if (empty? r)
       [h]
       (conj (mreverse2 r) h))))
@@ -145,9 +150,9 @@ P05 (*) Reverse a list.)
 P06 (**) Flatten a nested list structure.
 Transform a list, possibly holding lists as elements into a `flat' list by replacing each list with its elements (recursively).
 "
-(defn mflatten [coll]
-  (when-not (empty? coll)
-    (let [[h & r] coll]      
+(defn mflatten [ls]
+  (when-not (empty? ls)
+    (let [[h & r] ls]      
       (if (sequential? h)
         (mconcat (mflatten h) (mflatten r))
         (mcons h (mflatten r))))))
@@ -161,10 +166,10 @@ Example:
  (compress '(a a a a b c c a a d e e e e))
  (A B C A D E)
 "
-(defn has? [n coll] (some (fn [a] (= a n)) coll))
-(defn mcompress [coll]
-  (when-not (empty? coll)
-    (let [[h & r] coll]
+(defn has? [n ls] (some (fn [a] (= a n)) ls))
+(defn mcompress [ls]
+  (when-not (empty? ls)
+    (let [[h & r] ls]
       (if (= h (first r))
         (mcompress r)
         (mcons h (mcompress r))))))
@@ -179,39 +184,73 @@ Example:
 * (pack '(a a a a b c c a a d e e e e))
  ((A A A A) (B) (C C) (A A) (D) (E E E E))
 "
-(defn span [coll]
+(defn span [ls]
   (cond 
-   (empty? coll) nil
-   :else (list (mtake-while #(= % (first coll)) coll)
-               (mdrop-while #(= % (first coll)) coll))))
+   (empty? ls) nil
+   :else (list (mtake-while #(= % (first ls)) ls)
+               (mdrop-while #(= % (first ls)) ls))))
 
-(defn span1 [a coll acc]
+(defn span1 [a ls acc]
   (cond 
-   (= a (first coll)) (span1 (first coll) (rest coll) (cons a acc))
-   :else (list acc coll)))
+   (= a (mfirst ls)) (span1 (mfirst ls) (mrest ls) (mcons a acc))
+   :else (list acc ls)))
 
-        
-(defn mpack [coll]
-  (when-not (empty? coll)
-    (let [[h & _r] (span coll)
+(defn mpack [ls]
+  (when-not (empty? ls)
+    (let [[h & _r] (span ls)
           r (first _r)]
       (cons h (mpack r)))))
 
 (mpack '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
 
-(defn encode-run-length [coll]
-  (mmap #(list (count %) (first %)) (mpack coll)))
+(defn encode-run-length [ls]
+  (mmap #(list (mcount %) (mfirst %)) (mpack ls)))
 
 (encode-run-length '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
 
-(defn decode-run-length [coll]
-  (when-not (empty? coll)
-    (let [[h & r] coll
+(defn encode-run-length-modified [ls]
+  (mmap #(if (= 1 (mcount %))
+           (mfirst %)
+           (list (mcount %) (mfirst %))) (mpack ls)))
+
+(encode-run-length-modified '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
+
+(defn decode-run-length [ls]
+  (when-not (empty? ls)
+    (let [[h & r] ls
           len (first h)
           item (last h)]
-      (concat (repeat len item) (decode-run-length r)))))
+      (mconcat (mrepeat len item) (decode-run-length r)))))
 
-(decode-run-length (encode-run-length '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e)))
+(defn decode-run-length-modified [ls]
+  (when-not (empty? ls)
+    (let [[h & r] ls]
+      (if (sequential? h)
+        (mconcat (mrepeat (first h) (last h)) (decode-run-length-modified r))
+        (cons h (decode-run-length-modified r))))))
+
+(decode-run-length-modified (encode-run-length-modified '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e)))
+
+(defn mreplicate [ls n]
+  (when-not (empty? ls)
+    (let [[h & r] ls]
+      (mconcat (mrepeat n h) (mreplicate r n)))))
+
+(mreplicate [1 2 3] 3)
+
+(defn msplit [_ls _n]
+  (letfn [(_msplit [ls n]
+            (when-not (empty? ls)
+              (if (= _n n)
+                (list ls)
+                (_msplit (mrest ls) (inc n)  ))))]
+    (_msplit _ls 0)))
+
+(defn msplit2 [ls n]
+  (list (take n ls) (drop n ls)))
+
+(msplit [1 2 3 4 5 6 7 8 9 10] 3)
+(msplit2 [1 2 3 4 5 6 7 8 9 10] 3)
 
 (defn -main [& args] (println "Hello, World!"))
 
