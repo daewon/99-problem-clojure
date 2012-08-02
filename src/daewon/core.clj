@@ -10,6 +10,12 @@
 
 (defn mrepeat [cnt item] (take cnt (lazy-seq (cons item (mrepeat cnt item)))))
 
+(defn mreduce [f acc ls]
+  (cond (empty? ls) acc
+        :else (let [[h & r] ls
+                    ret (apply f [acc h])]
+                ret (mreduce f ret r))))
+
 (defn minterleave [as bs]
   (when-not (empty? as)
     (let [[h & r] as]
@@ -138,13 +144,13 @@ P05 (*) Reverse a list.)
       [h]
       (conj (mreverse r) h))))
 
-(defn mreverse2 [ls]
-  (let [[h & r] ls]
-    (if (empty? r)
-      [h]
-      (conj (mreverse2 r) h))))
+(defn mreverse2 [ls acc]
+  (cond 
+   (empty? ls) acc
+   :else (let [[h & r] ls]
+           (mreverse2 r (mcons h acc)))))
 
-(mreverse [1 2 3])
+(mreverse2 [1 2 3 4 5] [])
 
 "
 P06 (**) Flatten a nested list structure.
@@ -238,19 +244,22 @@ Example:
 
 (mreplicate [1 2 3] 3)
 
-(defn msplit [_ls _n]
-  (letfn [(_msplit [ls n]
+(defn msplit [_n _ls]
+  (letfn [(ms [n ls left]
             (when-not (empty? ls)
-              (if (= _n n)
-                (list ls)
-                (_msplit (mrest ls) (inc n)  ))))]
-    (_msplit _ls 0)))
+              (let [[h & r] ls]
+                (if (= n 0)
+                  [left r]
+                  (ms (dec n) r (concat left [h]))
+                  ))))]
+    (ms _n _ls [])))
 
-(defn msplit2 [ls n]
+(msplit 3 [1 2 3 4 5 6 7 8 9 10])
+
+(defn msplit2 [n ls]
   (list (take n ls) (drop n ls)))
 
-(msplit [1 2 3 4 5 6 7 8 9 10] 3)
-(msplit2 [1 2 3 4 5 6 7 8 9 10] 3)
+(msplit2 3 [1 2 3 4 5 6 7 8 9 10])
 
 (defn -main [& args] (println "Hello, World!"))
 
