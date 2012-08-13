@@ -249,7 +249,7 @@ Example:
             (when-not (empty? ls)
               (let [[h & r] ls]
                 (if (= n 0)
-                  [left r]
+                  `(~left ~ls)
                   (ms (dec n) r (concat left [h]))
                   ))))]
     (ms _n _ls [])))
@@ -260,6 +260,74 @@ Example:
   (list (take n ls) (drop n ls)))
 
 (msplit2 3 [1 2 3 4 5 6 7 8 9 10])
+
+(defn mslice [ls s e];
+  (when-not (empty? ls)
+    (let [[h & r] ls]
+      (cond
+       (> e 1) (if (> s 1)
+                 (mslice r (dec s) (dec e)) ;; drop previous
+                 (cons h (mslice r s (dec e)))) 
+       :else `(~h)))))
+
+(mslice [1 2 3 4 5] 2 3)
+(mslice '(:a :b :c :d :e :f :g :h :i :k) 3 7)
+
+
+(defn mrotate [_ls _n]
+  (letfn [(ms [n ls left]
+            (when-not (empty? ls)
+              (let [[h & r] ls]
+                (if (= n 0)
+                  (concat ls left)
+                  (ms (dec n) r (concat left [h]))
+                  ))))]
+    (if (> _n 0)
+      (ms _n _ls [])
+      (ms (- (count _ls) (* -1 _n)) _ls [])
+      )))
+
+(mrotate '(:a :b :c :d :e :f :g :h) 3)
+;;(D E F G H A B C)
+
+(mrotate '(:a :b :c :d :e :f :g :h) -2)
+;;(G H A B C D E F)
+
+(defn mremove-at [n ls]
+  (when-not (empty? ls)
+    (let [[h & r] ls]
+      (if (= n 0)
+        (mremove-at (dec n) r)
+        (cons h (mremove-at (dec n) r))))))
+
+(mremove-at 2 [1 2 3 4 5 6])
+
+(defn minsert-at [n item ls]
+  (when-not (empty? ls)
+    (let [[h & r] ls]
+      (if (= n 0)
+        (cons h (cons item  (minsert-at (dec n) item r)))
+        (cons h (minsert-at (dec n) item r))))))
+
+(minsert-at 2 0 [1 2 3 4 5 6])
+
+(defn mrange
+  ([e] (mrange 1 e))
+  ([s e]
+     (if (not= e s)
+       (cons s (mrange (inc s) e))
+       `(~s))))
+
+(mrange 4 9)
+(mrange 10)
+
+(defn mrand-select [coll n]
+  (when-not (empty? coll)
+  (let [p (rand (count coll))
+        el (nth coll p)]
+    (cons el (mrand-select (rest coll) n)))))
+
+(mrand-select [:a :b :c :d :e :f :g :h :i] 3)
 
 (defn -main [& args] (println "Hello, World!"))
 
