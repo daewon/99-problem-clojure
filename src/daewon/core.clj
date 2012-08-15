@@ -321,13 +321,14 @@ Example:
 (mrange 4 9)
 (mrange 10)
 
+(defn mrand [n] (Math/round (rand n)))
 (defn mrand-select [coll n]
-  (when-not (empty? coll)
-  (let [p (rand (count coll))
-        el (nth coll p)]
-    (cons el (mrand-select (rest coll) n)))))
+  (let [[h & r] coll rnd (mrand (count coll))]
+    (cond
+     (= (count coll) n) coll
+     (< rnd n) (cons h (mrand-select r (dec n)))
+     :else (mrand-select r n))))
 
 (mrand-select [:a :b :c :d :e :f :g :h :i] 3)
 
 (defn -main [& args] (println "Hello, World!"))
-
