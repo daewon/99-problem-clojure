@@ -321,7 +321,7 @@ Example:
 (mrange 4 9)
 (mrange 10)
 
-(defn mrand [n] (Math/round (rand n)))
+(defn mrand [n] (Math/round (rand (dec n))))
 (defn mrand-select [coll n]
   (let [[h & r] coll rnd (mrand (count coll))]
     (cond
@@ -329,6 +329,6 @@ Example:
      (< rnd n) (cons h (mrand-select r (dec n)))
      :else (mrand-select r n))))
 
-(mrand-select [:a :b :c :d :e :f :g :h :i] 3)
+(mrand-select [:a :b :c :d :e :f :g :h :i] 7)
 
 (defn -main [& args] (println "Hello, World!"))
