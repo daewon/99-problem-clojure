@@ -165,4 +165,4 @@
         (empty? xss) nil
         :else (concat (map #(cons x %) (my-comb xs (dec n))) (my-comb xs n))))
 
-(defn -main [& args] (println "Hello, World!"))
+(defn -main [& args] (println "99 problem clojure"))
