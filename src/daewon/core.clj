@@ -1,334 +1,168 @@
 (ns daewon.core (:gen-class))
-
-(defmacro mcons-macro [a lb]`(list ~a ~@lb))
-
-(def mcons cons) ;; how to implement cons?
-
-(defn mfirst [ls] (let [[h & r] ls] h))
-
-(defn mrest [ls] (let [[h & r] ls] r))
-
-(defn mrepeat [cnt item] (take cnt (lazy-seq (cons item (mrepeat cnt item)))))
-
-(defn mreduce [f acc ls]
-  (cond (empty? ls) acc
-        :else (let [[h & r] ls
-                    ret (apply f [acc h])]
-                ret (mreduce f ret r))))
-
-(defn minterleave [as bs]
-  (when-not (empty? as)
-    (let [[h & r] as]
-      (mcons h (minterleave bs r)))))
-
-(minterleave [1 3 5] [2 4 6 7])
-
-(defn mmap [f ls]
-  (when-not (empty? ls)
-    (let [[x & xs] ls]
-      (mcons (f x) (mmap f xs)))))
-
-(defmacro mmap-macro [f ls]
-  `(for [i# ~ls] (~f i#)))
-
-(defn mconcat2 [la lb]
-  (let [acc (atom [])]
-    (doseq [x (rseq lb)] (reset! acc (mcons x @acc)))
-    (doseq [x (rseq la)] (reset! acc (mcons x @acc)))
-    @acc))
-
-(defn mconcat [la lb]
-  (let [[h & r] la]
-    (if (sequential? la)
-      (mcons h (mconcat r lb))
-      lb)))
-
-(defmacro mconcat-macro [la lb] `(list ~@la ~@lb))
-(defn mconcat3 [la lb] (eval `(mconcat-macro ~la ~lb)))
-
-(defn mtake-while [pred ls]
-  (lazy-seq (let [[h & r] ls]
-              (when (pred h) (mcons h (mtake-while pred r))))))
-
-(defn mdrop-while [pred ls]
-  (when-not (empty? ls)
-    (let [[h & r] ls]
-      (if (pred h)
-        (mdrop-while pred r)
-        (mcons h r)))))
-"
-P01 (*) Find the last box of a list.
-    Example:
-    * (mlast '(a b c d))
-    (D)
-"
-(defn mlast [ls]
-  (let [[head & r] ls]
-    (if (empty? r)
-      head
-      (mlast r))))
-
-(defn mlast2 [ls]
-  (mfirst (drop (- (count ls) 1) ls)))
-
-(defn mlast3 [ls]
-  (let [n (- (count ls) 1)]
-    (->> ls (drop n) first)))
-
-(defn mlast3 [ls]
-  (let [n (- (count ls) 1)]
-    (->> ls (drop n) first)))
-
-(defn mlast4 [ls]
-  (reduce (fn [a b] (identity b)) ls))
-
-(mlast [1 2 3 4]) 
-(mlast2 [1 2 3 4])
-(mlast3 [1 2 3 4])
-(mlast4 [1 2 3 4])
-
-"
-P02 (*) Find the last but one box of a list.
-    Example:
-    * (mbut-last '(a b c d))
-    (A B C)
-"
-(defn mbut-last [ls]
-  (let [[f & r] ls]
-    (when-not (empty? r)
-      (lazy-seq (cons f (mbut-last r))))))
-
-(defn mbut-last2 [ls]
-  (take (- (count ls) 1) ls))
-
-(mbut-last [1 2 3 4])
-(mbut-last2 [1 2 3 4])
-
-"
-P03 (*) Find the K'th element of a list.
-The first element in the list is number 0.
-"
-(defn mnth [ls n]
-  (let [[h & r] ls]
-    (if (= n 0)
-      h
-      (mnth r (dec n)))))
-
-(defn mnth2 [ls n]
-  (first (drop n ls)))
-
-(mnth [1 2 3] 1)
-(mnth2 [1 2 3] 1)
-
-"  
-P04 (*) Find the number of elements of a list.)
-"
-(defn mcount [ls]
-  (let [[h & r] ls]
-    (if (empty? r)
-      1
-      (+ 1 (mcount r)))))
-
-(defn mcount2 [ls]
-  (reduce (fn [a b] (+ 1 a)) ls))
-
-(mcount[1 2 3])
-(mcount2 [1 2 3])
-
-"
-P05 (*) Reverse a list.)
-"
-(defn mreverse [ls]
-  (let [[h & r] ls]
-    (if (empty? r)
-      [h]
-      (conj (mreverse r) h))))
-
-(defn mreverse2 [ls acc]
-  (cond 
-   (empty? ls) acc
-   :else (let [[h & r] ls]
-           (mreverse2 r (mcons h acc)))))
-
-(mreverse2 [1 2 3 4 5] [])
-
-"
-P06 (**) Flatten a nested list structure.
-Transform a list, possibly holding lists as elements into a `flat' list by replacing each list with its elements (recursively).
-"
-(defn mflatten [ls]
-  (when-not (empty? ls)
-    (let [[h & r] ls]      
-      (if (sequential? h)
-        (mconcat (mflatten h) (mflatten r))
-        (mcons h (mflatten r))))))
-
-(mflatten '(:a :b (:c) :d :e (:f :g (:h (:i))) :j))
-
-"
-P08 (**) Eliminate consecutive duplicates of list elements.
-If a list contains repeated elements they should be replaced with a single copy of the element. The order of the elements should not be changed.
-Example:
- (compress '(a a a a b c c a a d e e e e))
- (A B C A D E)
-"
-(defn has? [n ls] (some (fn [a] (= a n)) ls))
-(defn mcompress [ls]
-  (when-not (empty? ls)
-    (let [[h & r] ls]
-      (if (= h (first r))
-        (mcompress r)
-        (mcons h (mcompress r))))))
-
-(mcompress '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
-
-"
-P09 (**) Pack consecutive duplicates of list elements into sublists.
-If a list contains repeated elements they should be placed in separate sublists.
-
-Example:
-* (pack '(a a a a b c c a a d e e e e))
- ((A A A A) (B) (C C) (A A) (D) (E E E E))
-"
-(defn span [ls]
-  (cond 
-   (empty? ls) nil
-   :else (list (mtake-while #(= % (first ls)) ls)
-               (mdrop-while #(= % (first ls)) ls))))
-
-(defn span1 [a ls acc]
-  (cond 
-   (= a (mfirst ls)) (span1 (mfirst ls) (mrest ls) (mcons a acc))
-   :else (list acc ls)))
-
-(defn mpack [ls]
-  (when-not (empty? ls)
-    (let [[h & _r] (span ls)
-          r (first _r)]
-      (cons h (mpack r)))))
-
-(mpack '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
-
-(defn encode-run-length [ls]
-  (mmap #(list (mcount %) (mfirst %)) (mpack ls)))
-
-(encode-run-length '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
-
-(defn encode-run-length-modified [ls]
-  (mmap #(if (= 1 (mcount %))
-           (mfirst %)
-           (list (mcount %) (mfirst %))) (mpack ls)))
-
-(encode-run-length-modified '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
-
-(defn decode-run-length [ls]
-  (when-not (empty? ls)
-    (let [[h & r] ls
-          len (first h)
-          item (last h)]
-      (mconcat (mrepeat len item) (decode-run-length r)))))
-
-(defn decode-run-length-modified [ls]
-  (when-not (empty? ls)
-    (let [[h & r] ls]
-      (if (sequential? h)
-        (mconcat (mrepeat (first h) (last h)) (decode-run-length-modified r))
-        (cons h (decode-run-length-modified r))))))
-
-(decode-run-length-modified (encode-run-length-modified '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e)))
-
-(defn mreplicate [ls n]
-  (when-not (empty? ls)
-    (let [[h & r] ls]
-      (mconcat (mrepeat n h) (mreplicate r n)))))
-
-(mreplicate [1 2 3] 3)
-
-(defn msplit [_n _ls]
-  (letfn [(ms [n ls left]
-            (when-not (empty? ls)
-              (let [[h & r] ls]
-                (if (= n 0)
-                  `(~left ~ls)
-                  (ms (dec n) r (concat left [h]))
-                  ))))]
-    (ms _n _ls [])))
-
-(msplit 3 [1 2 3 4 5 6 7 8 9 10])
-
-(defn msplit2 [n ls]
-  (list (take n ls) (drop n ls)))
-
-(msplit2 3 [1 2 3 4 5 6 7 8 9 10])
-
-(defn mslice [ls s e];
-  (when-not (empty? ls)
-    (let [[h & r] ls]
-      (cond
-       (> e 1) (if (> s 1)
-                 (mslice r (dec s) (dec e)) ;; drop previous
-                 (cons h (mslice r s (dec e)))) 
-       :else `(~h)))))
-
-(mslice [1 2 3 4 5] 2 3)
-(mslice '(:a :b :c :d :e :f :g :h :i :k) 3 7)
-
-
-(defn mrotate [_ls _n]
-  (letfn [(ms [n ls left]
-            (when-not (empty? ls)
-              (let [[h & r] ls]
-                (if (= n 0)
-                  (concat ls left)
-                  (ms (dec n) r (concat left [h]))
-                  ))))]
-    (if (> _n 0)
-      (ms _n _ls [])
-      (ms (- (count _ls) (* -1 _n)) _ls [])
-      )))
-
-(mrotate '(:a :b :c :d :e :f :g :h) 3)
-;;(D E F G H A B C)
-
-(mrotate '(:a :b :c :d :e :f :g :h) -2)
-;;(G H A B C D E F)
-
-(defn mremove-at [n ls]
-  (when-not (empty? ls)
-    (let [[h & r] ls]
-      (if (= n 0)
-        (mremove-at (dec n) r)
-        (cons h (mremove-at (dec n) r))))))
-
-(mremove-at 2 [1 2 3 4 5 6])
-
-(defn minsert-at [n item ls]
-  (when-not (empty? ls)
-    (let [[h & r] ls]
-      (if (= n 0)
-        (cons h (cons item  (minsert-at (dec n) item r)))
-        (cons h (minsert-at (dec n) item r))))))
-
-(minsert-at 2 0 [1 2 3 4 5 6])
-
-(defn mrange
-  ([e] (mrange 1 e))
-  ([s e]
-     (if (not= e s)
-       (cons s (mrange (inc s) e))
-       `(~s))))
-
-(mrange 4 9)
-(mrange 10)
-
-(defn mrand [n] (Math/round (rand (dec n))))
-(defn mrand-select [coll n]
-  (let [[h & r] coll rnd (mrand (count coll))]
+(require '[clojure.string :as str])
+
+;; P-99: Ninety-Nine Prolog Problems
+;; https://sites.google.com/site/prologsite/prolog-problems/
+
+(defn my-last [[x & xs]]
+  "1.01 (*) Find the last element of a list."
+  (if (empty? xs) x
+      (recur xs)))
+
+(defn my-but-last [[x & xs]]
+  "1.02 (*) Find the last but one element of a list."
+  (when-not (empty? xs)
+    (cons x (my-but-last xs))))
+
+(defn my-element-at [xss n]
+  "1.03 (*) Find the K'th element of a list."
+  (when-let [[x & xs] xss]
+    (cond (zero? n) x
+          :else (my-element-at xs (dec n)))))
+
+(defn my-count [yss]
+  "1.04 (*) Find the number of elements of a list."
+  (loop [[x & xs :as xss] yss, cnt 0]
+    (cond (empty? xss) cnt
+          :else (recur xs (inc cnt)))))
+
+(defn my-reverse [[x & xs :as xss]]
+  "1.05 (*) Reverse a list."
+  (cond (empty? xss) []
+        :else (conj (my-reverse xs) x)));
+
+(defn my-palindrome? [xss]
+  "1.06 (*) Find out whether a list is a palindrome."
+  (let [seq-xss (seq xss)] (= (reverse seq-xss) seq-xss)))
+
+(defn my-flatten [[x & xs :as xss]]
+  "1.07 (**) Flatten a nested list structure."
+  (cond (empty? xss) nil
+        (sequential? x) (concat (my-flatten x) (my-flatten xs))
+        :else (cons x (my-flatten xs))))
+
+(defn my-compress [[x & xs :as xss]]
+  "1.08 (**) Eliminate consecutive duplicates of list elements."
+  (cond (empty? xss) nil
+        (= x (first xs)) (my-compress xs)
+        :else (cons x (my-compress xs))))
+
+(defn my-span [xss]
+  "span list"
+  (loop [[x & xs] xss, acc []]
     (cond
-     (= (count coll) n) coll
-     (< rnd n) (cons h (mrand-select r (dec n)))
-     :else (mrand-select r n))))
+     (empty? xss) []
+     (= x (first xs)) (recur xs (cons x acc))
+     :else (list (cons x acc) xs))))
 
-(mrand-select [:a :b :c :d :e :f :g :h :i] 7)
+(defn my-pack [xss]
+  "1.09 (**) Pack consecutive duplicates of list elements into sublists."
+  (when-not (empty? xss)
+    (let [[h r & _] (my-span xss)]
+      (cons h (my-pack r)))))
+
+(defn my-encode-run-length [xss]
+  "1.10 (*) Run-length encoding of a list."
+  (map #(list (count %) (first %)) (my-pack xss)))
+
+(my-encode-run-length '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
+
+(defn my-encode-run-length-modified [xss]
+  "1.11 (*) Modified run-length encoding."
+  (map #(if (= 1 (count %))
+          (first %)
+          [(count %) (first %)]) (my-pack xss)))
+
+(defn my-decode-run-length [xss]
+  "1.12 (**) Decode a run-length encoded list."  
+  (when-not (empty? xss)
+    (let [[x & xs] xss, len (first x), item (last x)]
+      (concat (repeat len item) (my-decode-run-length xs)))))
+
+(defn my-decode-run-length-modified [xss]
+  "1.13 (**) Run-length encoding of a list (direct solution)."
+  (when-let [[x & xs] xss]
+    (if (sequential? x)
+      (concat (repeat (first x) (last x)) (my-decode-run-length-modified xs))
+      (cons x (my-decode-run-length-modified xs)))))
+
+(defn my-dupli 
+  "1.14 (*) Duplicate the elements of a list. 1.15 (**) Duplicate the elements of a list a given number of times."
+  ([xss] (my-dupli xss 2))
+  ([[x & xs :as xss] n]
+     (when-not (empty? xss)
+       (concat (repeat n x) (my-dupli xs n)))))
+
+(defn my-drop-nth [yss n]
+  "1.16 (**) Drop every N'th element from a list."
+  (loop [[x & xs :as xss] yss, idx 1, acc []]
+    (cond (empty? xss) acc
+          (zero? (mod idx n)) (recur xs (inc idx), acc)
+          :else (recur xs (inc idx) (conj acc x)))))
+
+(defn my-split [yss n]
+  "1.17 (*) Split a list into two parts; the length of the first part is given."
+  (loop [[x & xs :as xss] yss, idx 0, acc []]
+    (cond (= n idx) [acc xss]
+          :else (recur xs (inc idx) (conj acc x)))))
+
+(defn my-slice [yss s e]
+  "1.18 (**) Extract a slice from a list."
+  (loop [[x & xs] yss, idx 1, acc []]
+    (cond (> idx e) acc
+          (< idx s) (recur xs (inc idx) acc)          
+          :else (recur xs (inc idx) (conj acc x)))))
+
+(defn my-rotate [xss n]
+  "1.19 (**) Rotate a list N places to the left."
+  (let [n-split (if (> n 0) n (+ (count xss) n))
+        [left right & _] (my-split xss n-split)]
+    (concat right left)))
+
+(defn my-remove-at [yss n]
+  "1.20 (*) Remove the K'th element from a list."
+  (when-let [[x & xs :as xss] yss]
+    (if (= n 0)
+      (my-remove-at xs (dec n))
+      (cons x (my-remove-at xs (dec n))))))
+
+(defn my-insert-at [n item yss]
+  "1.21 (*) Insert an element at a given position into a list."
+  (when-let [[x & xs] yss]
+    (if (= n 0)
+      (cons item (cons x (my-insert-at (dec n) item xs)))
+      (cons x (my-insert-at (dec n) item xs)))))
+
+(defn my-range
+  "1.22 (*) Create a list containing all integers within a given range."
+  ([e] (my-range 0 e))
+  ([s e] (if (not= (dec e) s)
+           (cons s (my-range (inc s) e))
+           `(~s))))
+
+(defn my-rand [n] (Math/round (rand (dec n))))
+(defn my-rand-select [xss n]
+  "1.23 (**) Extract a given number of randomly selected elements from a list."  
+  (let [[x & xs] xss, rnd (my-rand (count xss))]
+    (cond
+     (= (count xss) n) xss
+     (< rnd n) (cons x (my-rand-select xs (dec n)))
+     :else (my-rand-select xs n))))
+
+(defn my-lotto [n limit]
+  "1.24 (*) Lotto: Draw N different random numbers from the set 1..M."
+  (let [xss (my-range 1 (inc limit))]
+    (my-rand-select xss n)))
+
+(defn my-rand-perm [xss]
+  "1.25 (*) Generate a random permutation of the elements of a list."
+  (shuffle xss))
+
+(defn my-comb [[x & xs :as xss] n]
+  "(**) Generate the combinations of K distinct objects chosen from the N elements of a list"
+  (cond (> n (count xss)) []
+        (= (count xss) n) [xss]
+        (empty? xss) nil
+        :else (concat (map #(cons x %) (my-comb xs (dec n))) (my-comb xs n))))
 
 (defn -main [& args] (println "Hello, World!"))
