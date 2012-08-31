@@ -59,14 +59,14 @@
 (deftest test-my-decode-run-length
   (let [ls [:a, :a, :a, :a, :b, :c, :c, :a, :a, :d, :e, :e, :e, :e]
         encoded (my-encode-run-length ls)]
-    
     (is (= ls (my-decode-run-length encoded)))))
 
-(deftest test-my-decode-run-length-modified
-  (let [ls [:a, :a, :a, :a, :b, :c, :c, :a, :a, :d, :e, :e, :e, :e]
-        encoded (my-encode-run-length-modified ls)]
-    
-    (is (= ls (my-decode-run-length-modified encoded)))))
+(deftest test-my-encode-run-length-modified-direct
+  (is (= (my-encode-run-length-modified-direct [:a, :a, :a, :a, :b, :c, :c, :a, :a, :d, :e, :e, :e, :e])
+         [[4 :a], :b, [2 :c], [2 :a], :d, [4 :e]]))
+
+  (is (= (my-encode-run-length-modified-direct [:a, :a, :a, :a, :b, :c, :c, :a, :a, :d, :e, :e, :e, :e])
+         (my-encode-run-length-modified [:a, :a, :a, :a, :b, :c, :c, :a, :a, :d, :e, :e, :e, :e]))))
 
 (deftest test-my-dupli
   (is (= [:a :a :b :b :c :c] (my-dupli [:a :b :c])))
@@ -125,10 +125,4 @@
   (is (= [[1 2] [1 3] [2 3]] (my-comb [1 2 3] 2)))
   (is (= [] (my-comb [1 2 3] 4)))
   (is (= 220 (count (my-comb [1 2 3 4 5 6 7 8 9 10 11 12] 3)))))
-
-
-
-
-
-
 

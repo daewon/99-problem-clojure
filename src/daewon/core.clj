@@ -65,8 +65,6 @@
   "1.10 (*) Run-length encoding of a list."
   (map #(list (count %) (first %)) (my-pack xss)))
 
-(my-encode-run-length '(:a :a :a :a :b :c :c :a :a :d :e :e :e :e))
-
 (defn my-encode-run-length-modified [xss]
   "1.11 (*) Modified run-length encoding."
   (map #(if (= 1 (count %))
@@ -80,11 +78,17 @@
       (concat (repeat len item) (my-decode-run-length xs)))))
 
 (defn my-decode-run-length-modified [xss]
-  "1.13 (**) Run-length encoding of a list (direct solution)."
   (when-let [[x & xs] xss]
     (if (sequential? x)
       (concat (repeat (first x) (last x)) (my-decode-run-length-modified xs))
       (cons x (my-decode-run-length-modified xs)))))
+
+(defn my-encode-run-length-modified-direct [[x & xs :as xss]]
+  "1.13 (**) Run-length encoding of a list (direct solution)."
+  (cond (empty? xss) nil
+        (not= x (first xs)) (cons x (my-encode-run-length-modified-direct xs))
+        :else (let [[a b & _] (my-span xss), size-a [(count a) x]]
+                (cons size-a (my-encode-run-length-modified-direct b)))))
 
 (defn my-dupli 
   "1.14 (*) Duplicate the elements of a list. 1.15 (**) Duplicate the elements of a list a given number of times."
@@ -164,5 +168,9 @@
         (= (count xss) n) [xss]
         (empty? xss) nil
         :else (concat (map #(cons x %) (my-comb xs (dec n))) (my-comb xs n))))
+
+(def ls [1 2 3 4 5 6 7 8])
+(defn slice [ls s e k];
+  (slice ls s e))
 
 (defn -main [& args] (println "99 problem clojure"))
