@@ -163,14 +163,11 @@
   (shuffle xss))
 
 (defn my-comb [[x & xs :as xss] n]
-  "(**) Generate the combinations of K distinct objects chosen from the N elements of a list"
+  "1.26 (**) Generate the combinations of K distinct objects chosen from the N elements of a list"
   (cond (> n (count xss)) []
         (= (count xss) n) [xss]
         (empty? xss) nil
         :else (concat (map #(cons x %) (my-comb xs (dec n))) (my-comb xs n))))
 
-(def ls [1 2 3 4 5 6 7 8])
-(defn slice [ls s e k];
-  (slice ls s e))
 
 (defn -main [& args] (println "99 problem clojure"))
