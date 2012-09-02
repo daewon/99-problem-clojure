@@ -91,7 +91,8 @@
                 (cons size-a (my-encode-run-length-modified-direct b)))))
 
 (defn my-dupli 
-  "1.14 (*) Duplicate the elements of a list. 1.15 (**) Duplicate the elements of a list a given number of times."
+  "1.14 (*) Duplicate the elements of a list. 
+   1.15 (**) Duplicate the elements of a list a given number of times."
   ([xss] (my-dupli xss 2))
   ([[x & xs :as xss] n]
      (when-not (empty? xss)
