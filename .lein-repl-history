@@ -1,0 +1,10 @@
+(length `( 1 2 3))
+(length `(1 2 3))
+(len `(1 2 3))
+test
+(cons 1 `(1 2 3))
+[1 2 3 4]
+(getClass [1 2 3 4])
+(.getClass [1 2 3 4])
+p
+(.getClass [1 2 3 4])
