@@ -72,7 +72,7 @@
           [(count %) (first %)]) (my-pack xss)))
 
 (defn my-decode-run-length [xss]
-  "1.12 (**) Decode a run-length encoded list."  
+  "1.12 (**) Decode a run-length encoded list."
   (when-not (empty? xss)
     (let [[x & xs] xss, len (first x), item (last x)]
       (concat (repeat len item) (my-decode-run-length xs)))))
@@ -90,8 +90,8 @@
         :else (let [[a b & _] (my-span xss), size-a [(count a) x]]
                 (cons size-a (my-encode-run-length-modified-direct b)))))
 
-(defn my-dupli 
-  "1.14 (*) Duplicate the elements of a list. 
+(defn my-dupli
+  "1.14 (*) Duplicate the elements of a list.
    1.15 (**) Duplicate the elements of a list a given number of times."
   ([xss] (my-dupli xss 2))
   ([[x & xs :as xss] n]
@@ -115,7 +115,7 @@
   "1.18 (**) Extract a slice from a list."
   (loop [[x & xs] yss, idx 1, acc []]
     (cond (> idx e) acc
-          (< idx s) (recur xs (inc idx) acc)          
+          (< idx s) (recur xs (inc idx) acc)
           :else (recur xs (inc idx) (conj acc x)))))
 
 (defn my-rotate [xss n]
@@ -147,7 +147,7 @@
 
 (defn my-rand [n] (Math/round (rand (dec n))))
 (defn my-rand-select [xss n]
-  "1.23 (**) Extract a given number of randomly selected elements from a list."  
+  "1.23 (**) Extract a given number of randomly selected elements from a list."
   (let [[x & xs] xss, rnd (my-rand (count xss))]
     (cond
      (= (count xss) n) xss
